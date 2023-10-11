@@ -1,0 +1,56 @@
+# This is a basic workflow to help you get started with Actions
+
+name: mark commit status
+
+# Controls when the workflow will run
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      ref: 
+        description: 'the git reference for this job'
+        type: string
+        default: main
+        required: true
+      status:
+        description: 'status for the commit'
+        required: true
+        type: choice
+        options:
+        - pending
+        - success
+        - failure
+        
+      desc:
+        description: 'free text describing the status'
+      url:
+        description: 'a link that can be assisiate with the commit'
+        type: string
+
+permissions:
+  statuses: write
+  
+    
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  set-commit-status:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{inputs.ref}}
+    - name: calculate ref hash
+      id: calculated-git-hash
+      run: |
+        ref_sha=$(git rev-parse HEAD)
+        echo "ref_sha=$ref_sha" >> $GITHUB_OUTPUT
+    - name: Set commit status
+      uses: myrotvorets/set-commit-status-action@1f65b503baf942683e5b79059a18530d783318e6
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        status: ${{inputs.status}}
+        sha: ${{steps.calculated-git-hash.outputs.ref_sha}}
+        description: ${{inputs.desc}}
+        targetUrl: ${{inputs.url}}
+        context: Set by QA ${{github.actor}}
